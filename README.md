@@ -70,12 +70,14 @@ Assim, optei em utilizar o MongoDB onde criei duas coleções: propostas e telem
 	git clone <url-do-repositorio>
 	```
 
-2. Restaure os pacotes:
+3. No appsettings.json da pasta /src/SimuladorCaixa.Api/ alterar a string de conexao do SQL Server:
+
+4. Restaure os pacotes:
 	```powershell
 	dotnet restore SimuladorCaixa.sln
 	```
 
-3. Inicie o AppHost (inicia todos os serviços Aspire e configura o MongoDB e Redis automaticamente):
+5. Inicie o AppHost (inicia todos os serviços Aspire e configura o MongoDB e Redis automaticamente):
 	```powershell
 	dotnet run --project src/SimuladorCaixa.AppHost/SimuladorCaixa.AppHost.csproj
 	```

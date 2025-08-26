@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>5f7f034b-7948-41d1-88c7-48207fd199a6</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="WeatherForecast.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SimuladorCaixa.Application\SimuladorCaixa.Application.csproj" />
+    <ProjectReference Include="..\SimuladorCaixa.Infra\SimuladorCaixa.Infra.csproj" />
+    <ProjectReference Include="..\SimuladorCaixa.ServiceDefaults\SimuladorCaixa.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

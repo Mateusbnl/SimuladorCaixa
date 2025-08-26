@@ -1,0 +1,29 @@
+{
+  "bsonType": "object",
+  "required": ["endpoint", "metodo", "statusCode", "sucesso", "tempo", "dataHora"],
+  "properties": {
+    "endpoint": {
+      "bsonType": "string",
+      "description": "Endpoint da requisicao"
+    },
+    "metodo": {
+      "bsonType": "string",
+      "description": "Metodo HTTP utilizado"
+    },
+    "statusCode": {
+      "bsonType": "int",
+      "description": "Codigo de status HTTP"
+    },
+    "sucesso": {
+      "bsonType": "bool",
+      "description": "Indica se a requisicao foi bem-sucedida"
+    },
+    "tempo": {
+      "bsonType": "long",
+      "description": "Tempo de execucao em milissegundos"
+    },
+    "dataHora": {
+      "bsonType": "date"
+    }
+  }
+}

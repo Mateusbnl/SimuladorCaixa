@@ -1,0 +1,6 @@
+SimuladorCaixa.Api_HostAddress = http://localhost:5162
+
+POST {{SimuladorCaixa.Api_HostAddress}}/simular/
+Accept: application/json
+
+###

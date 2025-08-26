@@ -1,0 +1,60 @@
+{
+  "bsonType": "object",
+  "required": ["id", "prazo", "valor", "produto", "simulacoes", "dataCriacao"],
+  "properties": {
+    "id": {
+      "bsonType": "int"
+    },
+    "prazo": {
+      "bsonType": "int"
+    },
+    "valor": {
+      "bsonType": "decimal"
+    },
+    "produto": {
+      "bsonType": "object",
+      "required": ["codigo", "nome", "taxaJuros", "prazoMinimo", "prazoMaximo", "valorMinimo", "valorMaximo"],
+      "properties": {
+        "codigo": { "bsonType": "int" },
+        "nome": { "bsonType": "string" },
+        "taxaJuros": { "bsonType": "decimal" },
+        "prazoMinimo": { "bsonType": "int" },
+        "prazoMaximo": { "bsonType": ["int", "null"] },
+        "valorMinimo": { "bsonType": "decimal" },
+        "valorMaximo": { "bsonType": "decimal" }
+      }
+    },
+    "simulacoes": {
+      "bsonType": "array",
+      "items": {
+        "bsonType": "object",
+        "required": ["id", "valorFinanciado", "prazo", "taxaJuros", "valorTotalFinanciado", "prestacoes", "modalidade"],
+        "properties": {
+          "id": { "bsonType": "int" },
+          "valorFinanciado": { "bsonType": "decimal" },
+          "prazo": { "bsonType": "int" },
+          "taxaJuros": { "bsonType": "decimal" },
+          "valorTotalFinanciado": { "bsonType": "decimal" },
+          "prestacoes": {
+            "bsonType": "array",
+            "items": {
+              "bsonType": "object",
+              "required": ["numero", "valorAmortizacao", "valorJuros", "valorPrestacao", "dataVencimento"],
+              "properties": {
+                "numero": { "bsonType": "int" },
+                "valorAmortizacao": { "bsonType": "decimal" },
+                "valorJuros": { "bsonType": "decimal" },
+                "valorPrestacao": { "bsonType": "decimal" },
+                "dataVencimento": { "bsonType": "date" }
+              }
+            }
+          },
+          "modalidade": { "enum": ["SAC", "PRICE"] }
+        }
+      }
+    },
+    "dataCriacao": {
+      "bsonType": "date"
+    }
+  }
+}

@@ -44,27 +44,26 @@ namespace SimuladorCaixa.Infra.MongoDB.Repository
 
                 var match = Builders<Telemetria>.Filter.And(pipeline);
 
-                var aggregate = _telemetriaCollection.Aggregate()
-                    .Match(match)
-                    .Group(
-                        t => t.endpoint,
-                        g => new
-                        {
-                            Endpoint = g.Key,
-                            QtdRequisicoes = g.Count(),
-                            TempoMedio = g.Average(x => x.tempo),
-                            TempoMinimo = g.Min(x => x.tempo),
-                            TempoMaximo = g.Max(x => x.tempo),
-                            QtdSucesso = g.Count(x => x.sucesso)
-                        }
-                    );
+            var aggregate = _telemetriaCollection.Aggregate()
+                .Match(match)
+                .Group(
+                    key => 1, // Agrupa todos os registros juntos
+                    g => new
+                    {
+                        QtdRequisicoes = g.Count(),
+                        TempoMedio = g.Average(x => x.tempo),
+                        TempoMinimo = g.Min(x => x.tempo),
+                        TempoMaximo = g.Max(x => x.tempo),
+                        QtdSucesso = g.Count(x => x.sucesso)
+                    }
+                );
 
                 var resultado = await aggregate.ToListAsync();
                 foreach (var item in resultado)
                 {
                     var resumo = new TelemetriaResumoDTO
                     {
-                        nomeApi = item.Endpoint,
+                        nomeApi = "Simulador",
                         qtdRequisicoes = item.QtdRequisicoes,
                         tempoMedio = (int)item.TempoMedio,
                         tempoMinimo = (int)item.TempoMinimo,

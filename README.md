@@ -69,8 +69,8 @@ Assim, optei em utilizar o MongoDB onde criei duas coleções: propostas e telem
 	```powershell
 	git clone <url-do-repositorio>
 	```
-
-3. No appsettings.json da pasta /src/SimuladorCaixa.Api/ alterar a string de conexao do SQL Server:
+ 
+3. No appsettings.json da pasta /src/SimuladorCaixa.Api/ alterar a string de conexao do SQL Server edo Event Hub.
 
 4. Restaure os pacotes:
 	```powershell

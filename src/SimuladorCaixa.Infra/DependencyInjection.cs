@@ -11,6 +11,7 @@ using SimuladorCaixa.Infra.Redis.Repository;
 using SimuladorCaixa.Infra.Sqlite.Repository;
 using SimuladorCaixa.Infra.SqlServer.Factory;
 using StackExchange.Redis;
+using Azure.Messaging.EventHubs;
 
 namespace SimuladorCaixa.Infra
 {
@@ -20,6 +21,13 @@ namespace SimuladorCaixa.Infra
             var configuration = builder.Configuration;
             // Adiciona Banco de Dados
             builder.Services.AddSingleton<SqlConnectionFactory>();
+
+            // Adiciona Event Hub
+            builder.Services.AddSingleton((sp) =>
+            {
+                var eventHubConnectionString = configuration.GetConnectionString("eventHub");
+                return new Azure.Messaging.EventHubs.Producer.EventHubProducerClient(eventHubConnectionString);
+            });
 
             // Adiciona MongoDB
             var mongoClient = new MongoClient(configuration.GetConnectionString("mongoDb"));

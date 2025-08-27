@@ -1,7 +1,10 @@
-﻿using SimuladorCaixa.Application.DTO;
+﻿using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Producer;
+using SimuladorCaixa.Application.DTO;
 using SimuladorCaixa.Application.Repository;
 using SimuladorCaixa.Core.Builders;
 using SimuladorCaixa.Core.Entidades;
+using System.Text.Json;
 
 namespace SimuladorCaixa.Application.UseCases
 {
@@ -11,22 +14,28 @@ namespace SimuladorCaixa.Application.UseCases
         private readonly IPropostaRepository _propostaRepository;
         private readonly IRelatorioRepository _relatorioRepository;
         private readonly ISimulacaoRepository _simulacaoRepository;
+        private readonly EventHubProducerClient _eventHubProducerClient;
 
-        public SimularTodasModalidadesUseCase(IProdutoRepository produtoRepository, IPropostaRepository propostaRepository, IRelatorioRepository relatorioRepository, ISimulacaoRepository simulacaoRepository)
+        public SimularTodasModalidadesUseCase(
+            IProdutoRepository produtoRepository,
+            IPropostaRepository propostaRepository,
+            IRelatorioRepository relatorioRepository,
+            ISimulacaoRepository simulacaoRepository,
+            EventHubProducerClient eventHubProducerClient)
         {
             _produtoRepository = produtoRepository;
             _propostaRepository = propostaRepository;
             _relatorioRepository = relatorioRepository;
             _simulacaoRepository = simulacaoRepository;
+            _eventHubProducerClient = eventHubProducerClient;
         }
 
         public async Task<Proposta> ExecuteAsync(PropostaDTO propostaDTO)
         {
             try
             {
-                //Cria Proposta
                 var proposta = new PropostaBuilder()
-                    .ComId(0) // ID será gerado pelo banco de dados
+                    .ComId(0)
                     .ComPrazo(propostaDTO.prazo)
                     .ComValor(propostaDTO.valorDesejado)
                     .ComProduto(await _produtoRepository.Get(propostaDTO.valorDesejado))
@@ -35,27 +44,26 @@ namespace SimuladorCaixa.Application.UseCases
 
                 if (proposta.IsValid())
                 {
-                    //Busca simulacoes com mesmos parametros no redis (prazo, valor, taxaJuros)
                     List<Simulacao> simulacoesExistentes = await BuscarSimulacoesAsync(proposta);
 
                     if (simulacoesExistentes != null && simulacoesExistentes.Count > 0)
                     {
                         proposta.simulacoes = simulacoesExistentes;
-                        SalvarPropostaAsync(proposta);
+                        await SalvarPropostaAsync(proposta);
                         SalvarParaRelatorio(proposta);
+                        EnviarEventoPropostaAsync(proposta);
                         return proposta;
                     }
 
-                    //Para cada modalidade, cria uma simulação e adiciona na proposta
                     var modalidades = Enum.GetValues(typeof(SimuladorCaixa.Core.Enums.ModalidadeEnum))
                            .Cast<SimuladorCaixa.Core.Enums.ModalidadeEnum>();
 
                     GerarSimulacoesPorModalidade(proposta, modalidades);
 
-                    //Salva Proposta
-                    SalvarPropostaAsync(proposta);
+                    await SalvarPropostaAsync(proposta);
                     SalvarSimulacoes(proposta);
                     SalvarParaRelatorio(proposta);
+                    EnviarEventoPropostaAsync(proposta);
                     return proposta;
                 }
                 else
@@ -63,11 +71,11 @@ namespace SimuladorCaixa.Application.UseCases
                     throw new ArgumentException("Proposta inválida: Verifique os valores de prazo e valor.");
                 }
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw new Exception("Erro ao simular todas as modalidades");
             }
@@ -75,11 +83,10 @@ namespace SimuladorCaixa.Application.UseCases
 
         private static void GerarSimulacoesPorModalidade(Proposta proposta, IEnumerable<Core.Enums.ModalidadeEnum> modalidades)
         {
-            //fiz um teste para fazer cada simulacao em paralelo, mas nao foi satisfatorio o desempenho
             foreach (var modalidade in modalidades)
             {
                 var simulacao = new SimulacaoBuilder()
-                    .ComId(0) // ID será gerado pelo banco de dados
+                    .ComId(0)
                     .ComValorFinanciado(proposta.valor)
                     .ComPrazo(proposta.prazo)
                     .ComTaxaJuros(proposta.produto.taxaJuros)
@@ -91,25 +98,50 @@ namespace SimuladorCaixa.Application.UseCases
             }
         }
 
-        private void SalvarSimulacoes(Proposta proposta)
+        private async Task SalvarSimulacoes(Proposta proposta)
         {
-            _simulacaoRepository.SalvarSimulacao(proposta.prazo, proposta.valor, proposta.produto.taxaJuros, proposta.simulacoes);
+            await _simulacaoRepository.SalvarSimulacao(proposta.prazo, proposta.valor, proposta.produto.taxaJuros, proposta.simulacoes);
         }
 
-        private void SalvarParaRelatorio(Proposta proposta)
+        private async Task SalvarParaRelatorio(Proposta proposta)
         {
-            _relatorioRepository.salvarProposta(proposta);
+            await _relatorioRepository.salvarProposta(proposta);
         }
 
         private async Task SalvarPropostaAsync(Proposta proposta)
         {
-            var id2 = await _propostaRepository.salvarProposta(proposta);
-            proposta.id = id2;
+            var id = await _propostaRepository.salvarProposta(proposta);
+            proposta.id = id;
         }
 
         private async Task<List<Simulacao>> BuscarSimulacoesAsync(Proposta proposta)
         {
             return await _simulacaoRepository.GetSimulacao(proposta.prazo, proposta.valor, proposta.produto.taxaJuros);
+        }
+
+        private async Task EnviarEventoPropostaAsync(Proposta proposta)
+        {
+            var evento = new
+            {
+                propostaId = proposta.id,
+                prazo = proposta.prazo,
+                valor = proposta.valor,
+                produto = proposta.produto?.nome,
+                dataCriacao = proposta.dataCriacao,
+                simulacoes = proposta.simulacoes.Select(s => new
+                {
+                    modalidade = s.modalidade.ToString(),
+                    valorFinanciado = s.valorFinanciado,
+                    prazo = s.prazo,
+                    taxaJuros = s.taxaJuros,
+                    valorTotalFinanciado = s.valorTotalFinanciado
+                }).ToList()
+            };
+
+            string jsonEvento = JsonSerializer.Serialize(evento);
+            using EventDataBatch eventBatch = await _eventHubProducerClient.CreateBatchAsync();
+            eventBatch.TryAdd(new EventData(System.Text.Encoding.UTF8.GetBytes(jsonEvento)));
+            await _eventHubProducerClient.SendAsync(eventBatch);
         }
     }
 }

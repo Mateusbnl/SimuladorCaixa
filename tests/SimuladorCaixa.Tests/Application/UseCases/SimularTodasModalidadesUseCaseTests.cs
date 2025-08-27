@@ -16,13 +16,15 @@ namespace SimuladorCaixa.Application.Tests.UseCases
             var produtoRepositoryMock = new Mock<IProdutoRepository>();
             var relatorioRepositoryMock = new Mock<IRelatorioRepository>();
             var propostaRepositoryMock = new Mock<IPropostaRepository>();
+            var simuulacaoRepositoryMock = new Mock<ISimulacaoRepository>();
             produtoRepositoryMock.Setup(r => r.Get(It.IsAny<decimal>())).ReturnsAsync(produtoMock);
             relatorioRepositoryMock.Setup(r => r.salvarProposta(It.IsAny<Proposta>())).Returns(Task.CompletedTask);
             propostaRepositoryMock.Setup(r => r.salvarProposta(It.IsAny<Proposta>())).ReturnsAsync(1);
+            simuulacaoRepositoryMock.Setup(r => r.SalvarSimulacao(It.IsAny<int>(), It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<List<Simulacao>>())).Returns(Task.CompletedTask);
 
             var propostaDTO = new PropostaDTO(20000m, 24);
 
-            var useCase = new SimularTodasModalidadesUseCase(produtoRepositoryMock.Object, propostaRepositoryMock.Object, relatorioRepositoryMock.Object);
+            var useCase = new SimularTodasModalidadesUseCase(produtoRepositoryMock.Object, propostaRepositoryMock.Object, relatorioRepositoryMock.Object, simuulacaoRepositoryMock.Object);
 
             // Act
             var proposta = await useCase.ExecuteAsync(propostaDTO);
@@ -44,12 +46,14 @@ namespace SimuladorCaixa.Application.Tests.UseCases
             var produtoRepositoryMock = new Mock<IProdutoRepository>();
             var relatorioRepositoryMock = new Mock<IRelatorioRepository>();
             var propostaRepositoryMock = new Mock<IPropostaRepository>();
+            var simuulacaoRepositoryMock = new Mock<ISimulacaoRepository>();
             produtoRepositoryMock.Setup(r => r.Get(It.IsAny<decimal>())).ReturnsAsync(produtoMock);
             relatorioRepositoryMock.Setup(r => r.salvarProposta(It.IsAny<Proposta>())).Returns(Task.CompletedTask);
+            simuulacaoRepositoryMock.Setup(r => r.SalvarSimulacao(It.IsAny<int>(), It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<List<Simulacao>>())).Returns(Task.CompletedTask);
 
             var propostaDTO = new PropostaDTO(-20000m, 24); // Valor negativo
 
-            var useCase = new SimularTodasModalidadesUseCase(produtoRepositoryMock.Object, propostaRepositoryMock.Object, relatorioRepositoryMock.Object);
+            var useCase = new SimularTodasModalidadesUseCase(produtoRepositoryMock.Object, propostaRepositoryMock.Object, relatorioRepositoryMock.Object, simuulacaoRepositoryMock.Object);
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(async () => await useCase.ExecuteAsync(propostaDTO));
